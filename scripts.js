@@ -711,7 +711,7 @@ const FormValidation = (function() {
         successMsg.setAttribute('role', 'status');
         successMsg.setAttribute('aria-live', 'polite');
         successMsg.style.marginTop = '1rem';
-        successMsg.textContent = 'Thank you! We\'ll send you a detailed quote within 2 hours.';
+        successMsg.textContent = 'Thank you! We\'ll send you a detailed quote promptly.';
         form.appendChild(successMsg);
         
         // Reset form
