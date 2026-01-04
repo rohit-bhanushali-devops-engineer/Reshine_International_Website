@@ -1,6 +1,6 @@
 # Reshine International Website
 
-This repository contains a multi-page, responsive, accessible corporate website for **Reshine International Private Limited**.
+This repository contains a multi-page, responsive, accessible corporate website for **Reshine International**.
 
 ## Folder structure
 ```

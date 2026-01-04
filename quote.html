@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="Get a quote for your customs clearance needs. Fill in the details and receive an estimate promptly." />
-  <title>Get Instant Quote — Reshine International Private Limited</title>
+  <title>Get Instant Quote — Reshine International</title>
   <link rel="icon" type="image/png" href="images/reshine-international-pvt-ltd-logo.png" />
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -15,8 +15,8 @@
     <nav class="nav" role="navigation" aria-label="Main navigation">
       <div class="nav-inner">
         <a href="index.html" class="brand" aria-label="Reshine International Home">
-          <img src="images/reshine-international-pvt-ltd-logo.png" alt="Reshine International logo" class="logo" />
-          <span class="company-name">Reshine International Pvt Ltd</span>
+          <img src="images/reshine-international-pvt-ltd-logo.png" alt="Reshine International - Global Logistics Solutions" class="logo" />
+          <span class="company-name">Reshine International</span>
         </a>
         <button class="hamburger" id="hamburger" aria-controls="primary-menu" aria-expanded="false" aria-label="Toggle menu">
           <span></span><span></span><span></span>
@@ -46,7 +46,7 @@
           <div class="form-row">
             <div class="field">
               <label for="quote-type">Service Type <span class="required">*</span></label>
-              <select id="quote-type" name="quote-type" required>
+              <select id="quote-type" name="quote-type" required aria-describedby="error-quote-type">
                 <option value="">Select service</option>
                 <option value="import">Import Clearance</option>
                 <option value="export">Export Clearance</option>
@@ -54,10 +54,11 @@
                 <option value="documentation">Documentation Only</option>
                 <option value="consultation">Consultation</option>
               </select>
+              <span class="error" id="error-quote-type" role="alert"></span>
             </div>
             <div class="field">
               <label for="quote-port">Port/Location <span class="required">*</span></label>
-              <select id="quote-port" name="quote-port" required>
+              <select id="quote-port" name="quote-port" required aria-describedby="error-quote-port">
                 <option value="">Select port</option>
                 <option value="mumbai">Mumbai Port</option>
                 <option value="nhava-sheva">Nhava Sheva (JNPT)</option>
@@ -65,21 +66,25 @@
                 <option value="chennai">Chennai</option>
                 <option value="other">Other</option>
               </select>
+              <span class="error" id="error-quote-port" role="alert"></span>
             </div>
           </div>
           <div class="form-row">
             <div class="field">
               <label for="quote-name">Your Name <span class="required">*</span></label>
-              <input type="text" id="quote-name" name="quote-name" required placeholder="Enter your name" />
+              <input type="text" id="quote-name" name="quote-name" required placeholder="Enter your name" aria-describedby="error-quote-name" />
+              <span class="error" id="error-quote-name" role="alert"></span>
             </div>
             <div class="field">
               <label for="quote-phone">Phone Number <span class="required">*</span></label>
-              <input type="tel" id="quote-phone" name="quote-phone" required placeholder="+91 1234567890" />
+              <input type="tel" id="quote-phone" name="quote-phone" required placeholder="+91 1234567890" aria-describedby="error-quote-phone" />
+              <span class="error" id="error-quote-phone" role="alert"></span>
             </div>
           </div>
           <div class="field">
             <label for="quote-email">Email Address <span class="required">*</span></label>
-            <input type="email" id="quote-email" name="quote-email" required placeholder="your.email@example.com" />
+            <input type="email" id="quote-email" name="quote-email" required placeholder="your.email@example.com" aria-describedby="error-quote-email" />
+            <span class="error" id="error-quote-email" role="alert"></span>
           </div>
           <div class="field">
             <label for="quote-details">Additional Details</label>
@@ -95,7 +100,7 @@
   <footer class="site-footer" role="contentinfo">
     <div class="container footer-grid">
       <div>
-        <h4>Reshine International Pvt Ltd</h4>
+        <h4>Reshine International</h4>
         <p>Quality-focused customs clearance & logistics coordination services.</p>
       </div>
       <div>

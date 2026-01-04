@@ -579,6 +579,64 @@ const FormValidation = (function() {
   }
   
   /**
+   * Helper to create fallback UI
+   */
+  function createFallbackUI(form, recipient, subject, body) {
+    // Remove existing fallback if any
+    const existingFallback = form.querySelector('.email-fallback');
+    if (existingFallback) existingFallback.remove();
+
+    const fallback = document.createElement('div');
+    fallback.className = 'email-fallback';
+    
+    // Webmail links
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipient}&su=${subject}&body=${body}`;
+    const yahooUrl = `http://compose.mail.yahoo.com/?to=${recipient}&subject=${subject}&body=${body}`;
+    const mailtoUrl = `mailto:${recipient}?subject=${subject}&body=${body}`;
+
+    fallback.innerHTML = `
+      <h4>Did the email not open?</h4>
+      <div class="email-actions">
+        <a href="${mailtoUrl}" class="btn-sm btn-outline">
+          Try Again
+        </a>
+        <a href="${gmailUrl}" target="_blank" rel="noopener noreferrer" class="btn-sm btn-gmail">
+          Open in Gmail
+        </a>
+        <a href="${yahooUrl}" target="_blank" rel="noopener noreferrer" class="btn-sm btn-yahoo">
+          Open in Yahoo
+        </a>
+      </div>
+      <div class="copy-area">
+        <label>Or copy text manually:</label>
+        <div class="copy-box" contenteditable="true">${decodeURIComponent(body).replace(/\n/g, '<br>')}</div>
+        <div style="margin-top:0.5rem; text-align:right;">
+           <button type="button" class="btn-sm btn-outline" id="copy-btn-${form.id}">Copy to Clipboard</button>
+        </div>
+      </div>
+    `;
+
+    form.appendChild(fallback);
+
+    // Copy functionality
+    const copyBtn = fallback.querySelector(`#copy-btn-${form.id}`);
+    const copyBox = fallback.querySelector('.copy-box');
+    
+    copyBtn.addEventListener('click', () => {
+      const text = copyBox.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => copyBtn.textContent = originalText, 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+        copyBox.focus();
+        document.execCommand('selectAll');
+      });
+    });
+  }
+
+  /**
    * Initialize contact form validation
    */
   function initContactForm() {
@@ -618,7 +676,7 @@ const FormValidation = (function() {
     });
     
     // Form submission
-    form.addEventListener('submit', async function(e) {
+    form.addEventListener('submit', function(e) {
       e.preventDefault();
       
       // Validate all fields
@@ -635,55 +693,43 @@ const FormValidation = (function() {
         return;
       }
       
-      // Disable submit button
+      // Show processing state
+      const originalBtnText = submitBtn.textContent;
       submitBtn.disabled = true;
-      const btnText = submitBtn.querySelector('.btn-text');
-      if (btnText) {
-        btnText.textContent = 'Sending...';
-      } else {
-        submitBtn.textContent = 'Sending...';
-      }
-      
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      submitBtn.textContent = 'Processing...';
+
+      // Simulate processing delay
+      setTimeout(() => {
+        const recipient = 'reshineinternational@gmail.com';
+        // Construct mailto URL
+        const subject = encodeURIComponent(`Contact Form Submission: ${name.value}`);
+        const body = encodeURIComponent(
+          `Name: ${name.value}\n` +
+          `Email: ${email.value}\n\n` +
+          `Message:\n${message.value}`
+        );
+        
+        window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
         
         // Show success message
+        submitBtn.textContent = 'Opening Email...';
         success.hidden = false;
+        success.textContent = "Opening your email client... Please click Send in the new window.";
         success.focus();
         
-        // Reset form
-        form.reset();
-        
-        // Clear all errors
-        [name, email, message].forEach(field => {
-          if (field) showError(field, '');
-        });
-        
+        // Show fallback UI
+        createFallbackUI(form, recipient, subject, body);
+
         // Scroll to success message
         success.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         
-        // Hide success after delay
-        setTimeout(() => {
-          success.hidden = true;
-        }, 5000);
-        
-      } catch (error) {
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'error';
-        errorMsg.setAttribute('role', 'alert');
-        errorMsg.textContent = 'Sorry, there was an error sending your message. Please try again or contact us directly.';
-        errorMsg.style.marginTop = '0.5rem';
-        form.appendChild(errorMsg);
-        setTimeout(() => errorMsg.remove(), 5000);
-      } finally {
+        // Reset button state (but keep form content for copy/paste if needed)
         submitBtn.disabled = false;
-        if (btnText) {
-          btnText.textContent = 'Send Message';
-        } else {
-          submitBtn.textContent = 'Send Message';
-        }
-      }
+        submitBtn.textContent = originalBtnText;
+        
+        // Reset form after a longer delay (30s) or manual clear
+        // We don't auto-reset immediately so user can copy text if mailto failed
+      }, 800);
     });
   }
   
@@ -694,39 +740,108 @@ const FormValidation = (function() {
     const form = document.getElementById('quick-quote-form');
     if (!form) return;
     
+    const type = document.getElementById('quote-type');
+    const port = document.getElementById('quote-port');
+    const name = document.getElementById('quote-name');
+    const phone = document.getElementById('quote-phone');
+    const email = document.getElementById('quote-email');
+    const details = document.getElementById('quote-details');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    if (!type || !port || !name || !phone || !email || !submitBtn) return;
+
+    // Validation rules
+    const rules = {
+      'quote-type': { required: 'Please select a service type' },
+      'quote-port': { required: 'Please select a port/location' },
+      'quote-name': { required: 'Please enter your name' },
+      'quote-phone': { required: 'Please enter your phone number' },
+      'quote-email': { 
+        required: 'Please enter your email',
+        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        patternError: 'Please enter a valid email address'
+      }
+    };
+
+    // Real-time validation on blur
+    [type, port, name, phone, email].forEach(field => {
+      field.addEventListener('blur', () => {
+        validateField(field, rules[field.id]);
+      });
+      // Also validate select on change
+      if (field.tagName === 'SELECT') {
+        field.addEventListener('change', () => {
+          validateField(field, rules[field.id]);
+        });
+      }
+    });
+    
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       
-      const submitBtn = form.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
+      // Validate all fields
+      let isValid = true;
+      isValid = validateField(type, rules['quote-type']) && isValid;
+      isValid = validateField(port, rules['quote-port']) && isValid;
+      isValid = validateField(name, rules['quote-name']) && isValid;
+      isValid = validateField(phone, rules['quote-phone']) && isValid;
+      isValid = validateField(email, rules['quote-email']) && isValid;
       
-      // Show loading state
+      if (!isValid) {
+        const firstError = form.querySelector('[aria-invalid="true"]');
+        if (firstError) {
+          firstError.focus();
+        }
+        return;
+      }
+
+      // Show processing state
+      const originalBtnText = submitBtn.textContent;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing...';
-      
-      // Simulate form submission
+
+      // Simulate processing delay for better UX
       setTimeout(() => {
+        const recipient = 'reshineinternational@gmail.com';
+        // Construct mailto URL
+        const subject = encodeURIComponent(`Quote Request: ${type.options[type.selectedIndex].text}`);
+        const body = encodeURIComponent(
+          `Service Type: ${type.options[type.selectedIndex].text}\n` +
+          `Port/Location: ${port.options[port.selectedIndex].text}\n\n` +
+          `Name: ${name.value}\n` +
+          `Phone: ${phone.value}\n` +
+          `Email: ${email.value}\n\n` +
+          `Additional Details:\n${details.value || 'N/A'}`
+        );
+        
+        window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+
+        // Show success feedback
+        submitBtn.textContent = 'Opening Email...';
+        
         const successMsg = document.createElement('div');
         successMsg.className = 'success';
-        successMsg.setAttribute('role', 'status');
-        successMsg.setAttribute('aria-live', 'polite');
         successMsg.style.marginTop = '1rem';
-        successMsg.textContent = 'Thank you! We\'ll send you a detailed quote promptly.';
+        successMsg.textContent = 'Opening your email client... Please click Send in the new window.';
+        
+        // Remove existing success message if any
+        const existingSuccess = form.querySelector('.success');
+        if (existingSuccess) existingSuccess.remove();
+        
         form.appendChild(successMsg);
+
+        // Show fallback UI
+        createFallbackUI(form, recipient, subject, body);
         
-        // Reset form
-        form.reset();
+        // Reset button state
         submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-        
-        // Scroll to success message
-        successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        
-        // Remove success message after 5 seconds
+        submitBtn.textContent = originalBtnText;
+
+        // Auto-remove success message only after a long delay
         setTimeout(() => {
-          successMsg.remove();
-        }, 5000);
-      }, 1500);
+            successMsg.remove();
+        }, 30000);
+      }, 800);
     });
   }
   
@@ -773,7 +888,7 @@ const Animations = (function() {
     }, observerOptions);
     
     const revealElements = document.querySelectorAll(
-      '.card, .service, .testimonial, .competencies li, h2, .contact-info, .industry-card, .port-card'
+      '.card, .service, .testimonial, h2, .contact-info, .industry-card, .port-card'
     );
     
     revealElements.forEach(el => {
@@ -969,6 +1084,72 @@ const ResourceDownload = (function() {
 })();
 
 // ============================================
+// VIDEO PLAYER MODULE
+// ============================================
+
+const VideoPlayer = (function() {
+  'use strict';
+  
+  /**
+   * Initialize video player with error handling
+   */
+  function init() {
+    const videoContainer = document.querySelector('.hero-image');
+    if (!videoContainer) return;
+    
+    const video = videoContainer.querySelector('video');
+    if (!video) return;
+    
+    // Error handling
+    video.addEventListener('error', function() {
+      console.warn('Video failed to load, switching to fallback.');
+      handleVideoError(videoContainer);
+    }, true);
+    
+    // Check if video is already in error state
+    if (video.error) {
+       handleVideoError(videoContainer);
+    }
+    
+    // Attempt to play
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.warn('Auto-play prevented:', error);
+      });
+    }
+  }
+  
+  /**
+   * Handle video loading error
+   */
+  function handleVideoError(container) {
+    container.classList.add('video-error');
+    const video = container.querySelector('video');
+    
+    if (video) {
+        video.style.display = 'none';
+        
+        // Add fallback image if not present
+        if (!container.querySelector('img')) {
+            const img = document.createElement('img');
+            img.src = 'images/container_ship.jpg';
+            img.alt = 'Cargo ship sailing';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = 'var(--radius-2xl)';
+            container.appendChild(img);
+        }
+    }
+  }
+  
+  return {
+    init: init
+  };
+})();
+
+// ============================================
 // UTILITY MODULES
 // ============================================
 
@@ -1044,6 +1225,7 @@ function init() {
   FormValidation.init();
   Animations.init();
   ResourceDownload.init();
+  VideoPlayer.init();
   Utils.init();
 }
 
