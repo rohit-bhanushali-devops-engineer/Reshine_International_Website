@@ -1,14 +1,25 @@
 # Reshine International Website
 
-This repository contains a single-page, responsive, accessible corporate website for **Reshine International Private Limited**.
+This repository contains a multi-page, responsive, accessible corporate website for **Reshine International Private Limited**.
 
 ## Folder structure
 ```
 reshine-website/
-├─ index.html
-├─ styles.css
-├─ scripts.js
-├─ README.md
+├─ index.html              # Homepage
+├─ about.html              # About page
+├─ services.html           # Services page
+├─ industries.html         # Industries page
+├─ ports.html              # Ports & Locations page
+├─ resources.html          # Resource Center
+├─ testimonials.html       # Testimonials page
+├─ faq.html               # FAQ page
+├─ contact.html           # Contact page
+├─ quote.html             # Quick Quote page
+├─ 404.html              # Error page
+├─ styles.css            # Shared styles
+├─ scripts.js            # Shared JavaScript
+├─ README.md             # This file
+├─ MULTI_PAGE_STRUCTURE.md  # Multi-page documentation
 └─ images/
    ├─ hero-cargo-ship.jpg
    ├─ service-customs-docs.jpg
@@ -17,7 +28,7 @@ reshine-website/
    ├─ service-compliance.jpg
    ├─ service-warehousing.jpg
    ├─ service-door2door.jpg
-   └─ logo-placeholder.svg
+   └─ reshine-international-pvt-ltd-logo.png
 ```
 
 ## How to deploy
@@ -45,5 +56,7 @@ Images are placeholders. Suggested Unsplash/Pexels search keywords:
 ## Notes
 - No external libraries used — pure HTML/CSS/JS.
 - Accessibility: ARIA attributes and semantic HTML included.
-- SEO: Meta title and description set in `index.html`.
+- SEO: Meta title and description set on all pages.
+- Multi-page structure with consistent navigation across all pages.
+- See `MULTI_PAGE_STRUCTURE.md` for detailed documentation on the page structure and navigation system.
 

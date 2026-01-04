@@ -145,16 +145,16 @@ const Navigation = (function() {
   }
   
   /**
-   * Initialize smooth scrolling for navigation links
+   * Initialize smooth scrolling for navigation links (same-page anchors)
    */
   function initSmoothScroll() {
     document.querySelectorAll('a[href^="#"]').forEach(link => {
       link.addEventListener('click', function(e) {
         const hash = this.getAttribute('href');
         if (hash.length > 1 && hash !== '#') {
-          e.preventDefault();
           const target = document.querySelector(hash);
           if (target) {
+            e.preventDefault();
             const headerHeight = header ? header.offsetHeight : 0;
             smoothScrollTo(target, headerHeight);
             
@@ -164,7 +164,7 @@ const Navigation = (function() {
             }
             
             // Close mobile menu if open
-            if (window.getComputedStyle(hamburger).display !== 'none' && 
+            if (hamburger && window.getComputedStyle(hamburger).display !== 'none' && 
                 hamburger.getAttribute('aria-expanded') === 'true') {
               closeMenu();
             }
@@ -175,26 +175,98 @@ const Navigation = (function() {
   }
   
   /**
-   * Update active navigation link based on scroll position
+   * Update active navigation link based on current page
    */
   function updateActiveLink() {
-    if (!navLinks.length || !sections.length) return;
+    if (!navLinks.length) return;
     
-    const scrollPos = window.pageYOffset + 150;
+    // Get current page path
+    const currentPath = window.location.pathname;
+    const currentPage = currentPath.split('/').pop() || 'index.html';
     
-    sections.forEach(section => {
-      const sectionTop = section.offsetTop;
-      const sectionHeight = section.offsetHeight;
-      const sectionId = section.getAttribute('id');
+    // Remove active class from all links
+    navLinks.forEach(link => {
+      link.classList.remove('active');
       
-      if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
-        navLinks.forEach(link => {
-          link.classList.remove('active');
-          if (link.getAttribute('href') === `#${sectionId}`) {
-            link.classList.add('active');
-          }
-        });
+      // Get link's target page
+      const linkHref = link.getAttribute('href');
+      const linkPage = linkHref.split('/').pop();
+      
+      // Set active if it matches current page
+      if (linkPage === currentPage || 
+          (currentPage === '' && linkPage === 'index.html') ||
+          (currentPage === 'index.html' && linkPage === 'index.html')) {
+        link.classList.add('active');
       }
+    });
+    
+    // Also handle same-page section navigation (for pages with multiple sections)
+    const sections = document.querySelectorAll('section[id]');
+    if (sections.length > 0) {
+      const scrollPos = window.pageYOffset + 150;
+      
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.offsetHeight;
+        const sectionId = section.getAttribute('id');
+        
+        if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+          navLinks.forEach(link => {
+            const linkHref = link.getAttribute('href');
+            // Only update if it's a same-page anchor link
+            if (linkHref.startsWith('#') && linkHref === `#${sectionId}`) {
+              link.classList.add('active');
+            }
+          });
+        }
+      });
+    }
+  }
+  
+  /**
+   * Prefetch likely navigation paths for better performance
+   */
+  function initPrefetching() {
+    if (!('IntersectionObserver' in window)) return;
+    
+    // Select navigation links that are internal (not external URLs, mailto, tel, or hash links)
+    const allLinks = document.querySelectorAll('.nav-link, .footer-links a, .cta');
+    const navLinks = Array.from(allLinks).filter(link => {
+      const href = link.getAttribute('href');
+      return href && 
+             !href.startsWith('http://') && 
+             !href.startsWith('https://') && 
+             !href.startsWith('mailto:') && 
+             !href.startsWith('tel:') && 
+             !href.startsWith('#') &&
+             (href.endsWith('.html') || href === 'index.html' || href === '/');
+    });
+    
+    if (navLinks.length === 0) return;
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const link = entry.target;
+          const href = link.getAttribute('href');
+          
+          // Prefetch the page
+          if (href) {
+            const linkElement = document.createElement('link');
+            linkElement.rel = 'prefetch';
+            linkElement.href = href;
+            document.head.appendChild(linkElement);
+          }
+          
+          observer.unobserve(link);
+        }
+      });
+    }, {
+      rootMargin: '50px'
+    });
+    
+    navLinks.forEach(link => {
+      observer.observe(link);
     });
   }
   
@@ -226,8 +298,16 @@ const Navigation = (function() {
     initMobileMenu();
     initSmoothScroll();
     initHeaderScroll();
-    window.addEventListener('scroll', throttle(updateActiveLink, 100), { passive: true });
-    updateActiveLink(); // Initial call
+    updateActiveLink(); // Initial call for current page
+    initPrefetching(); // Prefetch likely navigation paths
+    
+    // Update active link on scroll (for same-page sections)
+    window.addEventListener('scroll', throttle(() => {
+      const sections = document.querySelectorAll('section[id]');
+      if (sections.length > 0) {
+        updateActiveLink();
+      }
+    }, 100), { passive: true });
   }
   
   return {
